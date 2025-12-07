@@ -23,14 +23,30 @@ interface Sala {
   capacidade: number;
 }
 
-// Esquema de validação
+interface Lanche {
+  id: number;
+  nome: string;
+  preco: number;
+}
+
+// Esquema de validação do ingresso (sem id – json-server gera)
 const ingressoSchema = z.object({
   tipo: z.enum(['inteira', 'meia']),
-  quantidade: z
+  quantidade: z.coerce
     .number({ message: 'Quantidade deve ser um número' })
     .int({ message: 'Quantidade deve ser inteira' })
     .positive({ message: 'Quantidade deve ser maior que zero' })
     .max(20, { message: 'Quantidade máxima por compra é 20' }),
+  lancheId: z
+    .string()
+    .optional()
+    .refine(
+      (v) => v === undefined || v === '' || !Number.isNaN(Number(v)),
+      { message: 'Lanche inválido' },
+    )
+    .transform((v) =>
+      v === undefined || v === '' ? undefined : Number(v),
+    ),
 });
 
 type IngressoFormData = z.infer<typeof ingressoSchema>;
@@ -42,6 +58,7 @@ const ComprarIngresso: React.FC = () => {
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [filme, setFilme] = useState<Filme | null>(null);
   const [sala, setSala] = useState<Sala | null>(null);
+  const [lanches, setLanches] = useState<Lanche[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   const {
@@ -50,15 +67,23 @@ const ComprarIngresso: React.FC = () => {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<IngressoFormData>({
-    resolver: zodResolver(ingressoSchema),
+    resolver: zodResolver(ingressoSchema) as any,
     defaultValues: {
       tipo: 'inteira',
       quantidade: 1,
+      lancheId: undefined,
     },
   });
 
   const tipo = watch('tipo');
   const quantidade = watch('quantidade') || 0;
+  const lancheIdWatch = watch('lancheId'); // pode vir como number ou string
+
+  // Normaliza o lancheId pra número ou undefined
+  const lancheId =
+    typeof lancheIdWatch === 'string'
+      ? (Number(lancheIdWatch) || undefined)
+      : lancheIdWatch ?? undefined;
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -73,16 +98,30 @@ const ComprarIngresso: React.FC = () => {
         const sessaoData: Sessao = await resSessao.json();
         setSessao(sessaoData);
 
-        const [resFilme, resSala] = await Promise.all([
+        const [resFilme, resSala, resLanches] = await Promise.all([
           fetch(`http://localhost:3000/filmes/${sessaoData.filmeId}`),
           fetch(`http://localhost:3000/salas/${sessaoData.salaId}`),
+          fetch('http://localhost:3000/lanches'),
         ]);
+
+        if (!resFilme.ok || !resSala.ok) {
+          throw new Error('Filme ou sala não encontrados');
+        }
 
         const filmeData: Filme = await resFilme.json();
         const salaData: Sala = await resSala.json();
 
+        let lanchesData: Lanche[] = [];
+        if (resLanches.ok) {
+          const json = await resLanches.json();
+          lanchesData = Array.isArray(json) ? json : [];
+        } else {
+          console.warn('Não foi possível carregar lanches (404 ou erro).');
+        }
+
         setFilme(filmeData);
         setSala(salaData);
+        setLanches(lanchesData);
       } catch (error) {
         console.error('Erro ao carregar dados da compra:', error);
         alert('Erro ao carregar dados da sessão.');
@@ -98,7 +137,16 @@ const ComprarIngresso: React.FC = () => {
   const calcularValorTotal = () => {
     if (!sessao) return 0;
     const fator = tipo === 'meia' ? 0.5 : 1;
-    return sessao.preco * quantidade * fator;
+    const valorIngressos = sessao.preco * quantidade * fator;
+
+    const lancheSelecionado =
+      lancheId !== undefined
+        ? lanches.find((l) => l.id === lancheId)
+        : undefined;
+
+    const valorLanche = lancheSelecionado ? lancheSelecionado.preco : 0;
+
+    return valorIngressos + valorLanche;
   };
 
   const onSubmit = async (data: IngressoFormData) => {
@@ -113,10 +161,12 @@ const ComprarIngresso: React.FC = () => {
       const resp = await fetch('http://localhost:3000/ingressos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // json-server cria id do ingresso automaticamente
         body: JSON.stringify({
           sessaoId: sessao.id,
           tipo: data.tipo,
           quantidade: data.quantidade,
+          lancheId: lancheId ?? null,
           valorTotal,
         }),
       });
@@ -152,6 +202,10 @@ const ComprarIngresso: React.FC = () => {
   }
 
   const valorTotal = calcularValorTotal();
+  const lancheSelecionado =
+    lancheId !== undefined
+      ? lanches.find((l) => l.id === lancheId)
+      : undefined;
 
   return (
     <div className="container mt-5">
@@ -214,13 +268,37 @@ const ComprarIngresso: React.FC = () => {
             className={`form-control ${
               errors.quantidade ? 'is-invalid' : ''
             }`}
-            {...register('quantidade', { valueAsNumber: true })} // 🔹 converte para number
+            {...register('quantidade')}
             min={1}
             max={20}
           />
           {errors.quantidade && (
             <div className="invalid-feedback">
               {errors.quantidade.message}
+            </div>
+          )}
+        </div>
+
+        {/* LANCHE */}
+        <div className="mb-3">
+          <label className="form-label">Lanche (opcional)</label>
+          <select
+            className={`form-control ${
+              errors.lancheId ? 'is-invalid' : ''
+            }`}
+            {...register('lancheId')}
+          >
+            <option value="">Nenhum</option>
+            {Array.isArray(lanches) &&
+              lanches.map((lanche) => (
+                <option key={lanche.id} value={lanche.id}>
+                  {lanche.nome} - R$ {lanche.preco.toFixed(2)}
+                </option>
+              ))}
+          </select>
+          {errors.lancheId && (
+            <div className="invalid-feedback">
+              {errors.lancheId.message as string}
             </div>
           )}
         </div>
@@ -235,6 +313,15 @@ const ComprarIngresso: React.FC = () => {
             </strong>
             <br />
             Quantidade: <strong>{quantidade}</strong>
+            <br />
+            Lanche:{' '}
+            <strong>
+              {lancheSelecionado
+                ? `${lancheSelecionado.nome} (R$ ${lancheSelecionado.preco.toFixed(
+                    2,
+                  )})`
+                : 'Nenhum'}
+            </strong>
             <br />
             Valor total:{' '}
             <strong>R$ {valorTotal.toFixed(2)}</strong>

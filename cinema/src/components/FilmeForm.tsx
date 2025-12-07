@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-// Esquema de validação do filme
+// Esquema de validação do filme (sem id – json-server gera automaticamente)
 const filmeSchema = z.object({
   titulo: z
     .string()
@@ -15,8 +15,7 @@ const filmeSchema = z.object({
     .min(10, 'Sinopse deve ter pelo menos 10 caracteres')
     .max(500, 'Sinopse deve ter no máximo 500 caracteres'),
 
-  duracao: z
-    .coerce
+  duracao: z.coerce
     .number()
     .int({ message: 'Duração deve ser um número inteiro' })
     .positive({ message: 'Duração deve ser maior que zero' })
@@ -56,6 +55,7 @@ const FilmeForm: React.FC<FilmeFormProps> = ({ onSucesso }) => {
       const resp = await fetch('http://localhost:3000/filmes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // 👇 NÃO mandamos id: o json-server vai criar id numérico sozinho
         body: JSON.stringify(data),
       });
 
@@ -103,7 +103,7 @@ const FilmeForm: React.FC<FilmeFormProps> = ({ onSucesso }) => {
         <input
           type="number"
           className={`form-control ${errors.duracao ? 'is-invalid' : ''}`}
-          {...register('duracao', { valueAsNumber: true })}
+          {...register('duracao')}
         />
         {errors.duracao && (
           <div className="invalid-feedback">{errors.duracao.message}</div>

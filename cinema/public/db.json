@@ -1,30 +1,84 @@
 {
   "filmes": [
     {
-      "id": "4be2",
       "titulo": "GENTE GRANDE",
       "sinopse": "filme gente grande",
-      "duracao": 180,
-      "classificacao": "14",
+      "duracao": 120,
+      "classificacao": "+18",
       "genero": "COMEDIA",
-      "dataExibicao": "2025-12-10"
+      "dataExibicao": "2025-12-07",
+      "id": 1
+    },
+    {
+      "titulo": "GENTE GRANDE 2",
+      "sinopse": "Lenny Feder e a família se mudam para a própria cidade natal com objetivo ficarem perto dos amigos, mas acabam tendo que enfrentar alguns fantasmas do passado, como a covardia diante de valentões e o famigerado bullying na escola.",
+      "duracao": 101,
+      "classificacao": "12+",
+      "genero": "COMEDIA",
+      "dataExibicao": "2025-12-07",
+      "id": 2
     }
   ],
   "salas": [
     {
-      "id": "2bf3",
-      "numeroSala": "101",
-      "capacidade": 50
+      "numeroSala": "105",
+      "capacidade": 30,
+      "id": 1
+    },
+    {
+      "numeroSala": "80",
+      "capacidade": 50,
+      "id": 2
     }
   ],
   "sessoes": [
     {
-      "id": "102b",
-      "filmeId": null,
-      "salaId": null,
-      "dataHora": "2025-12-06T16:00",
-      "preco": 50
+      "filmeId": 1,
+      "salaId": 1,
+      "dataHora": "2025-12-10T21:16",
+      "preco": 50,
+      "id": 1
+    },
+    {
+      "filmeId": 2,
+      "salaId": 2,
+      "dataHora": "202519-12-07T00:00",
+      "preco": 20,
+      "id": 2
+    },
+    {
+      "filmeId": 1,
+      "salaId": 1,
+      "dataHora": "2025-12-06T00:30",
+      "preco": 35,
+      "id": 3
     }
   ],
-  "ingressos": []
+  "ingressos": [
+    {
+      "sessaoId": 1,
+      "tipo": "inteira",
+      "quantidade": 2,
+      "lancheId": 2,
+      "valorTotal": 115,
+      "id": 1
+    }
+  ],
+  "lanches": [
+    {
+      "id": 1,
+      "nome": "Pipoca + Refrigerante",
+      "preco": 25
+    },
+    {
+      "id": 2,
+      "nome": "Pipoca média",
+      "preco": 15
+    },
+    {
+      "id": 3,
+      "nome": "Refrigerante 500ml",
+      "preco": 8
+    }
+  ]
 }

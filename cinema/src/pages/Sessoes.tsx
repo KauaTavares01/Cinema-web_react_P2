@@ -21,24 +21,24 @@ interface Sessao {
   preco: number;
 }
 
-// Schema: filmeId e salaId chegam como STRING do select e são convertidos pra number
+// 🔹 IDs sempre numéricos, json-server gera o id da sessão.
+// filmeId e salaId vêm do <select> como string e o z.coerce.number() converte para number.
 const sessaoSchema = z.object({
-  filmeId: z
-    .string()
-    .min(1, { message: 'Filme é obrigatório' })
-    .transform((v) => Number(v)),
+  filmeId: z.coerce
+    .number()
+    .int()
+    .positive({ message: 'Filme é obrigatório' }),
 
-  salaId: z
-    .string()
-    .min(1, { message: 'Sala é obrigatória' })
-    .transform((v) => Number(v)),
+  salaId: z.coerce
+    .number()
+    .int()
+    .positive({ message: 'Sala é obrigatória' }),
 
   dataHora: z
     .string()
     .min(1, { message: 'Data e hora são obrigatórias' }),
 
-  preco: z
-    .coerce
+  preco: z.coerce
     .number()
     .positive({ message: 'Preço deve ser maior que zero' })
     .max(500, { message: 'Preço muito alto' }),
@@ -92,6 +92,7 @@ const Sessoes: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        // 👇 não enviamos id: o json-server cria id numérico automaticamente
         body: JSON.stringify(data),
       });
 
@@ -133,7 +134,7 @@ const Sessoes: React.FC = () => {
           >
             <option value="">Selecione um filme</option>
             {filmes.map((filme) => (
-              <option key={filme.id} value={String(filme.id)}>
+              <option key={filme.id} value={filme.id}>
                 {filme.titulo}
               </option>
             ))}
@@ -152,7 +153,7 @@ const Sessoes: React.FC = () => {
           >
             <option value="">Selecione uma sala</option>
             {salas.map((sala) => (
-              <option key={sala.id} value={String(sala.id)}>
+              <option key={sala.id} value={sala.id}>
                 {sala.numeroSala}
               </option>
             ))}

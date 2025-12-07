@@ -8,8 +8,8 @@ const salaSchema = z.object({
     .string()
     .min(1, 'Número da sala é obrigatório')
     .max(10, 'Número da sala deve ter no máximo 10 caracteres'),
-  capacidade: z
-    .coerce
+
+  capacidade: z.coerce
     .number()
     .int({ message: 'Capacidade deve ser um número inteiro' })
     .positive({ message: 'Capacidade deve ser maior que zero' })
@@ -19,7 +19,7 @@ const salaSchema = z.object({
 export type SalaFormData = z.infer<typeof salaSchema>;
 
 export interface Sala {
-  id: number;
+  id: number;        // 🔹 id numérico vindo do json-server
   numeroSala: string;
   capacidade: number;
 }
@@ -43,11 +43,13 @@ const SalaForm: React.FC<SalaFormProps> = ({ onSucesso }) => {
       const resp = await fetch('http://localhost:3000/salas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // 👇 não mandamos id, o json-server cria id int automaticamente
         body: JSON.stringify(data),
       });
+
       if (!resp.ok) throw new Error('Erro ao cadastrar sala');
 
-      const novaSala: Sala = await resp.json();
+      const novaSala: Sala = await resp.json(); // aqui já volta com id: number
       alert('Sala cadastrada com sucesso!');
       reset();
       if (onSucesso) onSucesso(novaSala);
@@ -77,7 +79,7 @@ const SalaForm: React.FC<SalaFormProps> = ({ onSucesso }) => {
         <input
           type="number"
           className={`form-control ${errors.capacidade ? 'is-invalid' : ''}`}
-          {...register('capacidade', { valueAsNumber: true })}
+          {...register('capacidade')}
         />
         {errors.capacidade && (
           <div className="invalid-feedback">{errors.capacidade.message}</div>

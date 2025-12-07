@@ -3,7 +3,7 @@ import SalaForm from '../components/SalaForm';
 
 interface Sala {
   id: number;
-  numeroSala: string;
+  numeroSala: number;
   capacidade: number;
 }
 
@@ -32,7 +32,7 @@ const Salas: React.FC = () => {
       <h1>Salas</h1>
       <p className="text-muted">Gerencie as salas do cinema.</p>
 
-      <SalaForm onSucesso={handleNovaSala} />
+      <SalaForm on-Sucesso={handleNovaSala} />
 
       <h2>Salas cadastradas</h2>
       {salas.length === 0 ? (
