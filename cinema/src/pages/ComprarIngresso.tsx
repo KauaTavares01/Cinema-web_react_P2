@@ -30,24 +30,44 @@ interface Lanche {
 }
 
 // Esquema de validação do ingresso (sem id – json-server gera)
-const ingressoSchema = z.object({
-  tipo: z.enum(['inteira', 'meia']),
-  quantidade: z.coerce
-    .number({ message: 'Quantidade deve ser um número' })
-    .int({ message: 'Quantidade deve ser inteira' })
-    .positive({ message: 'Quantidade deve ser maior que zero' })
-    .max(20, { message: 'Quantidade máxima por compra é 20' }),
-  lancheId: z
-    .string()
-    .optional()
-    .refine(
-      (v) => v === undefined || v === '' || !Number.isNaN(Number(v)),
-      { message: 'Lanche inválido' },
-    )
-    .transform((v) =>
-      v === undefined || v === '' ? undefined : Number(v),
-    ),
-});
+const ingressoSchema = z
+  .object({
+    tipo: z.enum(['inteira', 'meia']),
+    quantidade: z.coerce
+      .number({ message: 'Quantidade deve ser um número' })
+      .int({ message: 'Quantidade deve ser inteira' })
+      .positive({ message: 'Quantidade deve ser maior que zero' })
+      .max(20, { message: 'Quantidade máxima por compra é 20' }),
+
+    lancheId: z
+      .string()
+      .optional()
+      .refine(
+        (v) => v === undefined || v === '' || !Number.isNaN(Number(v)),
+        { message: 'Lanche inválido' },
+      )
+      .transform((v) =>
+        v === undefined || v === '' ? undefined : Number(v),
+      ),
+
+    lancheQuantidade: z.coerce
+      .number({
+        message: 'Quantidade de lanche deve ser um número',
+      })
+      .int({ message: 'Quantidade de lanche deve ser inteira' })
+      .positive({ message: 'Quantidade de lanche deve ser maior que zero' })
+      .max(20, { message: 'Quantidade máxima de lanche é 20' })
+      .optional(),
+  })
+  // Se tiver lancheId, exige lancheQuantidade
+  .refine(
+    (data) =>
+      data.lancheId === undefined || data.lancheQuantidade !== undefined,
+    {
+      path: ['lancheQuantidade'],
+      message: 'Informe a quantidade do lanche',
+    },
+  );
 
 type IngressoFormData = z.infer<typeof ingressoSchema>;
 
@@ -72,12 +92,14 @@ const ComprarIngresso: React.FC = () => {
       tipo: 'inteira',
       quantidade: 1,
       lancheId: undefined,
+      lancheQuantidade: 1,
     },
   });
 
   const tipo = watch('tipo');
   const quantidade = watch('quantidade') || 0;
-  const lancheIdWatch = watch('lancheId'); // pode vir como number ou string
+  const lancheIdWatch = watch('lancheId');
+  const lancheQuantidade = watch('lancheQuantidade') || 0;
 
   // Normaliza o lancheId pra número ou undefined
   const lancheId =
@@ -116,7 +138,7 @@ const ComprarIngresso: React.FC = () => {
           const json = await resLanches.json();
           lanchesData = Array.isArray(json) ? json : [];
         } else {
-          console.warn('Não foi possível carregar lanches (404 ou erro).');
+          console.warn('Não foi possível carregar lanches.');
         }
 
         setFilme(filmeData);
@@ -144,7 +166,10 @@ const ComprarIngresso: React.FC = () => {
         ? lanches.find((l) => l.id === lancheId)
         : undefined;
 
-    const valorLanche = lancheSelecionado ? lancheSelecionado.preco : 0;
+    const qtdLanche = lancheId !== undefined ? lancheQuantidade || 0 : 0;
+    const valorLanche = lancheSelecionado
+      ? lancheSelecionado.preco * qtdLanche
+      : 0;
 
     return valorIngressos + valorLanche;
   };
@@ -167,6 +192,8 @@ const ComprarIngresso: React.FC = () => {
           tipo: data.tipo,
           quantidade: data.quantidade,
           lancheId: lancheId ?? null,
+          lancheQuantidade:
+            lancheId !== undefined ? data.lancheQuantidade ?? 1 : 0,
           valorTotal,
         }),
       });
@@ -206,6 +233,11 @@ const ComprarIngresso: React.FC = () => {
     lancheId !== undefined
       ? lanches.find((l) => l.id === lancheId)
       : undefined;
+  const qtdLancheResumo =
+    lancheId !== undefined && lancheSelecionado ? lancheQuantidade || 0 : 0;
+  const valorLancheResumo = lancheSelecionado
+    ? lancheSelecionado.preco * qtdLancheResumo
+    : 0;
 
   return (
     <div className="container mt-5">
@@ -251,8 +283,7 @@ const ComprarIngresso: React.FC = () => {
                 {...register('tipo')}
               />
               <label className="form-check-label" htmlFor="tipoMeia">
-                Meia (50%)
-              </label>
+                Meia (50%)</label>
             </div>
           </div>
           {errors.tipo && (
@@ -260,9 +291,9 @@ const ComprarIngresso: React.FC = () => {
           )}
         </div>
 
-        {/* QUANTIDADE */}
+        {/* QUANTIDADE DE INGRESSOS */}
         <div className="mb-3">
-          <label className="form-label">Quantidade</label>
+          <label className="form-label">Quantidade de ingressos</label>
           <input
             type="number"
             className={`form-control ${
@@ -301,6 +332,27 @@ const ComprarIngresso: React.FC = () => {
               {errors.lancheId.message as string}
             </div>
           )}
+
+          {/* QUANTIDADE DE LANCHE (só faz sentido se tiver lanche selecionado) */}
+          {lancheId !== undefined && (
+            <div className="mt-3">
+              <label className="form-label">Quantidade de lanches</label>
+              <input
+                type="number"
+                className={`form-control ${
+                  errors.lancheQuantidade ? 'is-invalid' : ''
+                }`}
+                {...register('lancheQuantidade')}
+                min={1}
+                max={20}
+              />
+              {errors.lancheQuantidade && (
+                <div className="invalid-feedback">
+                  {errors.lancheQuantidade.message}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* RESUMO */}
@@ -312,12 +364,12 @@ const ComprarIngresso: React.FC = () => {
               {tipo === 'meia' ? 'Meia (50%)' : 'Inteira (100%)'}
             </strong>
             <br />
-            Quantidade: <strong>{quantidade}</strong>
+            Ingressos: <strong>{quantidade}</strong>
             <br />
             Lanche:{' '}
             <strong>
               {lancheSelecionado
-                ? `${lancheSelecionado.nome} (R$ ${lancheSelecionado.preco.toFixed(
+                ? `${qtdLancheResumo}x ${lancheSelecionado.nome} (R$ ${valorLancheResumo.toFixed(
                     2,
                   )})`
                 : 'Nenhum'}

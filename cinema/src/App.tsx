@@ -15,10 +15,11 @@ import Filmes from './pages/Filmes';
 import Salas from './pages/Salas';
 import Sessoes from './pages/Sessoes';
 import CadastroFilmes from './pages/CadastroFilmes';
-import AdminDashboard from './pages/AdminDashboard';
-import ClienteDashboard from './pages/ClienteDashboard';
+import AdminDashboard from './contexts/AdminDashboard';
+import ClienteDashboard from './contexts/ClienteDashboard';
 import ComprarIngresso from './pages/ComprarIngresso';
 import Login from './contexts/Login';
+import Lanches from './pages/Lanches';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -52,6 +53,7 @@ const Navbar: React.FC = () => {
 
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto">
+            {/* Visitante (não logado) */}
             {!user && (
               <li className="nav-item">
                 <Link className="nav-link" to="/filmes">
@@ -60,6 +62,7 @@ const Navbar: React.FC = () => {
               </li>
             )}
 
+            {/* ADMIN */}
             {user?.role === 'admin' && (
               <>
                 <li className="nav-item">
@@ -87,9 +90,16 @@ const Navbar: React.FC = () => {
                     Cadastro de Filmes
                   </Link>
                 </li>
+                {/* 👇 NOVO: link para a página de lanches */}
+                <li className="nav-item">
+                  <Link className="nav-link" to="/admin/lanches">
+                    Lanches
+                  </Link>
+                </li>
               </>
             )}
 
+            {/* CLIENTE */}
             {user?.role === 'cliente' && (
               <li className="nav-item">
                 <Link className="nav-link" to="/cliente">
@@ -168,6 +178,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute role="admin">
                 <CadastroFilmes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/lanches"
+            element={
+              <ProtectedRoute role="admin">
+                <Lanches />
               </ProtectedRoute>
             }
           />

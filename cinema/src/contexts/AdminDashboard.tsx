@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 interface Filme {
@@ -21,6 +21,12 @@ interface Sessao {
   preco: number;
 }
 
+interface Lanche {
+  id: number;
+  nome: string;
+  preco: number;
+}
+
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -28,26 +34,40 @@ const AdminDashboard: React.FC = () => {
   const [filmes, setFilmes] = useState<Filme[]>([]);
   const [salas, setSalas] = useState<Sala[]>([]);
   const [sessoes, setSessoes] = useState<Sessao[]>([]);
+  const [lanches, setLanches] = useState<Lanche[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const carregar = async () => {
       try {
-        const [resFilmes, resSalas, resSessoes] = await Promise.all([
+        const [resFilmes, resSalas, resSessoes, resLanches] = await Promise.all([
           fetch('http://localhost:3000/filmes'),
           fetch('http://localhost:3000/salas'),
           fetch('http://localhost:3000/sessoes'),
+          fetch('http://localhost:3000/lanches'),
         ]);
 
-        setFilmes(await resFilmes.json());
-        setSalas(await resSalas.json());
-        setSessoes(await resSessoes.json());
+        if (!resFilmes.ok || !resSalas.ok || !resSessoes.ok || !resLanches.ok) {
+          throw new Error('Erro ao carregar dados do painel');
+        }
+
+        const filmesData: Filme[] = await resFilmes.json();
+        const salasData: Sala[] = await resSalas.json();
+        const sessoesData: Sessao[] = await resSessoes.json();
+        const lanchesData: Lanche[] = await resLanches.json();
+
+        setFilmes(filmesData);
+        setSalas(salasData);
+        setSessoes(sessoesData);
+        setLanches(lanchesData);
       } catch (err) {
         console.error('Erro ao carregar dados admin:', err);
+        alert('Erro ao carregar dados do painel administrativo.');
       } finally {
         setLoading(false);
       }
     };
+
     carregar();
   }, []);
 
@@ -89,9 +109,10 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Cards de resumo */}
       <div className="row mb-4">
-        <div className="col-md-4 mb-3">
-          <div className="card shadow-sm">
+        <div className="col-md-3 mb-3">
+          <div className="card shadow-sm h-100">
             <div className="card-body">
               <h5 className="card-title">Filmes cadastrados</h5>
               <p className="display-6">{filmes.length}</p>
@@ -102,8 +123,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="col-md-4 mb-3">
-          <div className="card shadow-sm">
+        <div className="col-md-3 mb-3">
+          <div className="card shadow-sm h-100">
             <div className="card-body">
               <h5 className="card-title">Salas cadastradas</h5>
               <p className="display-6">{salas.length}</p>
@@ -114,8 +135,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="col-md-4 mb-3">
-          <div className="card shadow-sm">
+        <div className="col-md-3 mb-3">
+          <div className="card shadow-sm h-100">
             <div className="card-body">
               <h5 className="card-title">Sessões cadastradas</h5>
               <p className="display-6">{sessoes.length}</p>
@@ -125,8 +146,21 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <div className="col-md-3 mb-3">
+          <div className="card shadow-sm h-100">
+            <div className="card-body">
+              <h5 className="card-title">Lanches cadastrados</h5>
+              <p className="display-6">{lanches.length}</p>
+              <Link to="/admin/lanches" className="btn btn-secondary btn-sm">
+                Gerenciar lanches
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Filmes recentes */}
       <div className="card shadow-sm">
         <div className="card-body">
           <h5 className="card-title">Filmes recentes</h5>
