@@ -29,6 +29,17 @@ interface Lanche {
   preco: number;
 }
 
+// Ingressos já registrados no json-server
+interface IngressoExistente {
+  id: number;
+  sessaoId: number;
+  tipo: string;
+  quantidade: number;
+  lancheId: number | null;
+  lancheQuantidade: number;
+  valorTotal: number;
+}
+
 // Esquema de validação do ingresso (sem id – json-server gera)
 const ingressoSchema = z
   .object({
@@ -176,18 +187,55 @@ const ComprarIngresso: React.FC = () => {
 
   const onSubmit = async (data: IngressoFormData) => {
     try {
-      if (!sessao) {
-        alert('Sessão inválida');
+      if (!sessao || !sala) {
+        alert('Sessão ou sala inválida');
         return;
       }
 
+      // 🔹 1) Verificar capacidade da sala antes de registrar a compra
+      const resIngressos = await fetch(
+        `http://localhost:3000/ingressos?sessaoId=${sessao.id}`,
+      );
+      if (!resIngressos.ok) {
+        throw new Error('Erro ao verificar lotação da sessão');
+      }
+
+      const ingressosSessao: IngressoExistente[] =
+        await resIngressos.json();
+
+      const totalJaVendidos = ingressosSessao.reduce(
+        (total, ing) => total + (ing.quantidade || 0),
+        0,
+      );
+
+      const capacidadeSala =
+        typeof sala.capacidade === 'number' ? sala.capacidade : 0;
+
+      const disponiveis = capacidadeSala - totalJaVendidos;
+
+      if (disponiveis <= 0) {
+        alert(
+          'Esta sessão está lotada. Não há mais lugares disponíveis para venda.',
+        );
+        return;
+      }
+
+      if (data.quantidade > disponiveis) {
+        alert(
+          `Não há lugares suficientes nesta sessão.\n` +
+            `Lugares disponíveis: ${disponiveis}\n` +
+            `Quantidade solicitada: ${data.quantidade}`,
+        );
+        return;
+      }
+
+      // 🔹 2) Se passou na verificação, calcula valor e registra a compra
       const valorTotal = calcularValorTotal();
 
       const resp = await fetch('http://localhost:3000/ingressos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // json-server cria id do ingresso automaticamente
-        body: JSON.stringify({
+      body: JSON.stringify({
           sessaoId: sessao.id,
           tipo: data.tipo,
           quantidade: data.quantidade,
@@ -239,6 +287,9 @@ const ComprarIngresso: React.FC = () => {
     ? lancheSelecionado.preco * qtdLancheResumo
     : 0;
 
+  const capacidadeSala =
+    typeof sala.capacidade === 'number' ? sala.capacidade : 0;
+
   return (
     <div className="container mt-5">
       <h1>Comprar Ingresso</h1>
@@ -248,6 +299,8 @@ const ComprarIngresso: React.FC = () => {
           <h5 className="card-title">{filme.titulo}</h5>
           <p className="card-text">
             <strong>Sala:</strong> {sala.numeroSala}
+            <br />
+            <strong>Capacidade da sala:</strong> {capacidadeSala} lugares
             <br />
             <strong>Data/Hora:</strong> {sessao.dataHora}
             <br />
@@ -283,7 +336,8 @@ const ComprarIngresso: React.FC = () => {
                 {...register('tipo')}
               />
               <label className="form-check-label" htmlFor="tipoMeia">
-                Meia (50%)</label>
+                Meia (50%)
+              </label>
             </div>
           </div>
           {errors.tipo && (

@@ -80,6 +80,15 @@
       "lancheQuantidade": 10,
       "valorTotal": 500,
       "id": 3
+    },
+    {
+      "sessaoId": 1,
+      "tipo": "inteira",
+      "quantidade": 16,
+      "lancheId": null,
+      "lancheQuantidade": 0,
+      "valorTotal": 800,
+      "id": 4
     }
   ],
   "lanches": [
