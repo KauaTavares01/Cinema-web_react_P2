@@ -20,6 +20,7 @@ import ClienteDashboard from './contexts/ClienteDashboard';
 import ComprarIngresso from './pages/ComprarIngresso';
 import Login from './contexts/Login';
 import Lanches from './pages/Lanches';
+import MeusIngressos from './pages/MeusIngressos';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -90,7 +91,6 @@ const Navbar: React.FC = () => {
                     Cadastro de Filmes
                   </Link>
                 </li>
-                {/* 👇 NOVO: link para a página de lanches */}
                 <li className="nav-item">
                   <Link className="nav-link" to="/admin/lanches">
                     Lanches
@@ -101,11 +101,18 @@ const Navbar: React.FC = () => {
 
             {/* CLIENTE */}
             {user?.role === 'cliente' && (
-              <li className="nav-item">
-                <Link className="nav-link" to="/cliente">
-                  Área do Cliente
-                </Link>
-              </li>
+              <>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/cliente">
+                    Área do Cliente
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/meus-ingressos">
+                    Meus ingressos
+                  </Link>
+                </li>
+              </>
             )}
           </ul>
 
@@ -204,6 +211,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute role="cliente">
                 <ComprarIngresso />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meus-ingressos"
+            element={
+              <ProtectedRoute role="cliente">
+                <MeusIngressos />
               </ProtectedRoute>
             }
           />

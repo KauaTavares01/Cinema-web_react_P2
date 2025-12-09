@@ -71,6 +71,15 @@
       "lancheQuantidade": 2,
       "valorTotal": 170,
       "id": 2
+    },
+    {
+      "sessaoId": 1,
+      "tipo": "meia",
+      "quantidade": 10,
+      "lancheId": 1,
+      "lancheQuantidade": 10,
+      "valorTotal": 500,
+      "id": 3
     }
   ],
   "lanches": [
